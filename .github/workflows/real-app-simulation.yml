@@ -1,0 +1,45 @@
+name: Simple App CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: Build, Test, and Package App
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Run app tests (example: Node.js)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      # 3. Build Docker image
+      - name: Build Docker image
+        run: docker build -t my-app:ci .
+
+      # 4. Run the app container (sanity check)
+      - name: Run container and health check
+        run: |
+          docker run -d -p 3000:3000 --name my-app my-app:ci
+          sleep 5
+          curl --fail http://localhost:3000/health
+
+      # 5. Cleanup
+      - name: Stop and remove container
+        if: always()
+        run: docker rm -f my-app
